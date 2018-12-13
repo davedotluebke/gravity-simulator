@@ -23,7 +23,7 @@ class Vector3():
     def plus(self, other):
         return Vector3(self.c[0]+other.c[0], self.c[1]+other.c[1], self.c[2]+other.c[2])
 
-    def subtract(self, other):
+    def minus(self, other):
         return Vector3(self.c[0]-other.c[0], self.c[1]-other.c[1], self.c[2]-other.c[2])
 
     def scale(self, scalar: float):
@@ -31,19 +31,24 @@ class Vector3():
 
     
 class Point3(Vector3):
-    def __init__(self, x, y, z):
+    def __init__(self, x=0.0, y=0.0, z=0.0):
         self.c = (x, y, z)
+
+    def set_coord(self, v):
+        self.c = v.c
 
     def vec_from_to(src, dest):
         """Return a vector between two points, pointing from src to dest."""
-        return dest.subtract(src)
+        return dest.minus(src)
 
 def random_point_on_sphere(r: float) -> Point3: 
     """Return a random point on the surface of a sphere of radius 'r'. """
     # pick a random 'height' (may be negative), then a random angle
-    height = random.uniform(-r, r)
+    height = random.uniform(-1, 1)
     theta = random.uniform(0, 2*math.pi)
-    p = Point3(math.sin(theta), height, math.cos(theta))
+    v = Vector3(math.sin(theta), height, math.cos(theta)).normalize().scale(r)
+    p = Point3()
+    p.set_coord(v)
     # TODO: verify that this code generates well-distributed points (it should)
     return p
 
@@ -54,7 +59,7 @@ def acceleration_from_point(loc: Point3, p: Point3, mass: float) -> Vector3:
     V = Point3.vec_from_to(loc, p)  # vector from loc to point p
     dist = V.length()               # distance between loc and p
     V_unit = V.normalize()          # direction of acceleration (unit vector)
-    accel_mag = G*mass / dist*dist  # magnitude of the acceleration
+    accel_mag = (G*mass) / (dist*dist)  # magnitude of the acceleration
     accel_vec = V_unit.scale(accel_mag)  # vector of the acceleration
     return accel_vec
 
@@ -75,17 +80,15 @@ def accumulate_gravity_from_points(radius: float, location: Point3, numpoints: i
         total_accel = total_accel.plus(a)
     return total_accel
 
-planet_radius = 1.0                         # radius of planet
-location = Point3(0.0, planet_radius, 0.0)  # location of person standing on planet
-numpoints = 1000                            # number of points to integrate
-planet_mass = 1.0e9                          # mass of individual point
+planet_radius = float(input('Radius of planet: '))           # radius of planet
+planet_mass = float(input('Mass of planet: '))               # mass of sum of all of points
+location = Point3(0.0, planet_radius, 0.0)                   # location of person standing on planet
+numpoints = int(input('Number of points (e.g. 1000): '))     # number of points to integrate
 
-gravity_accel = accumulate_gravity_from_points(planet_radius, location, numpoints, planet_mass)
-print(gravity_accel)
-gravity_accel = accumulate_gravity_from_points(planet_radius, location, numpoints*10, planet_mass)
-print(gravity_accel)
-gravity_accel = accumulate_gravity_from_points(planet_radius, location, numpoints*100, planet_mass)
-print(gravity_accel)
-gravity_accel = accumulate_gravity_from_points(planet_radius, location, numpoints*1000, planet_mass)
-print(gravity_accel)
+repetition_times = int(input('Repetitions (e.g. 4): '))
 
+for i in range(0, repetition_times):
+    gravity_accel = accumulate_gravity_from_points(planet_radius, location, numpoints, planet_mass)
+    print('With %s points: ' % numpoints)
+    print(gravity_accel)
+    numpoints *= 10
